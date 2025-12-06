@@ -1,22 +1,22 @@
-
 <!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Admin - Swadhin CMS</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Swadhin — Simple Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body{font-family: system-ui, Arial; max-width:900px;margin:20px auto;padding:10px;}
-    .box{border:1px solid #ddd;padding:12px;margin-bottom:12px;border-radius:8px;}
-    textarea,input{width:100%;padding:8px;margin:6px 0;}
-    button{padding:8px 12px;margin-right:8px;}
-    .msg{background:#f9f9f9;padding:8px;border-radius:6px;margin-bottom:8px;}
-    .row{display:flex;gap:8px;}
-    .col{flex:1;}
+    body { font-family: system-ui, Arial; max-width: 900px; margin: 20px auto; padding: 10px; }
+    .box { border: 1px solid #ddd; padding: 12px; margin-bottom: 12px; border-radius: 8px; }
+    textarea, input { width: 100%; padding: 8px; margin: 6px 0; }
+    button { padding: 8px 12px; margin-right: 8px; cursor: pointer; }
+    .msg { background: #f9f9f9; padding: 8px; border-radius: 6px; margin-bottom: 8px; }
   </style>
 </head>
 <body>
+
   <h1>Swadhin — Simple Admin</h1>
+
+  <!-- AUTH SECTION -->
   <div id="authBox" class="box">
     <h3>Sign in</h3>
     <input id="email" placeholder="Email" />
@@ -26,21 +26,21 @@
       <button id="btnSignup">Create account</button>
       <button id="btnSignOut" style="display:none">Sign out</button>
     </div>
-    <div id="authInfo" style="margin-top:8px;color:#666"></div>
+    <div id="authInfo" style="margin-top:8px;color:#d00;font-size:14px;"></div>
   </div>
 
+  <!-- ADMIN AREA -->
   <div id="adminArea" style="display:none">
+
     <div class="box">
-      <h3>Site Content (simple key → value)</h3>
+      <h3>Site Content (Edit & Save)</h3>
       <div id="contentList"></div>
-      <hr/>
-      <h4>Add / Update key</h4>
-      <input id="contentKey" placeholder="key e.g. about_text or hero_title" />
-      <textarea id="contentValue" rows="4" placeholder="value (HTML allowed)"></textarea>
-      <div style="margin-top:8px;">
-        <button id="saveContent">Save</button>
-        <button id="deleteContent">Delete key</button>
-      </div>
+
+      <h4>Edit Key</h4>
+      <input id="contentKey" placeholder="key name (e.g. about_text)" />
+      <textarea id="contentValue" rows="4" placeholder="value here"></textarea>
+      <button id="saveContent">Save</button>
+      <button id="deleteContent">Delete</button>
     </div>
 
     <div class="box">
@@ -51,135 +51,164 @@
     </div>
   </div>
 
-  <!-- Firebase SDKs (compat - simple to use with minimal setup) -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- Your Firebase config (rename and paste real config in firebase-config.js) -->
-  <script src="firebase-config-example.js"></script>
+  <!-- YOUR CONFIG FILE (IMPORTANT!) -->
+  <script src="firebase-config.js"></script>
 
   <script>
-    // init firebase
     if (!window.firebaseConfig) {
-      document.getElementById('authInfo').innerText = '🔴 Please put your Firebase config into firebase-config-example.js (see README).';
+      document.getElementById("authInfo").innerText =
+        "Firebase config not found! Make sure firebase-config.js is uploaded.";
     }
+
     const app = firebase.initializeApp(window.firebaseConfig || {});
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // DOM
-    const adminArea = document.getElementById('adminArea');
-    const authBox = document.getElementById('authBox');
-    const authInfo = document.getElementById('authInfo');
-    const btnLogin = document.getElementById('btnLogin');
-    const btnSignup = document.getElementById('btnSignup');
-    const btnSignOut = document.getElementById('btnSignOut');
-    const emailEl = document.getElementById('email');
-    const passEl = document.getElementById('password');
-    const contentList = document.getElementById('contentList');
-    const contentKey = document.getElementById('contentKey');
-    const contentValue = document.getElementById('contentValue');
-    const saveContent = document.getElementById('saveContent');
-    const deleteContent = document.getElementById('deleteContent');
-    const messagesList = document.getElementById('messagesList');
-    const refreshMsgs = document.getElementById('refreshMsgs');
-    const exportMsgs = document.getElementById('exportMsgs');
+    const adminArea = document.getElementById("adminArea");
+    const authBox = document.getElementById("authBox");
+    const authInfo = document.getElementById("authInfo");
 
-    // Auth handlers
+    const btnLogin = document.getElementById("btnLogin");
+    const btnSignup = document.getElementById("btnSignup");
+    const btnSignOut = document.getElementById("btnSignOut");
+
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+
+    const contentList = document.getElementById("contentList");
+    const contentKey = document.getElementById("contentKey");
+    const contentValue = document.getElementById("contentValue");
+    const saveContent = document.getElementById("saveContent");
+    const deleteContent = document.getElementById("deleteContent");
+
+    const messagesList = document.getElementById("messagesList");
+    const refreshMsgs = document.getElementById("refreshMsgs");
+    const exportMsgs = document.getElementById("exportMsgs");
+
+    // AUTH HANDLING
     btnSignup.onclick = async () => {
       try {
-        const u = await auth.createUserWithEmailAndPassword(emailEl.value, passEl.value);
-        authInfo.innerText = 'Account created. You can sign in now.';
-      } catch(e){ authInfo.innerText = 'Error: '+e.message; }
+        await auth.createUserWithEmailAndPassword(emailEl.value, passEl.value);
+        authInfo.innerText = "Account created! Please sign in.";
+      } catch (e) {
+        authInfo.innerText = e.message;
+      }
     };
+
     btnLogin.onclick = async () => {
       try {
         await auth.signInWithEmailAndPassword(emailEl.value, passEl.value);
-      } catch(e){ authInfo.innerText = 'Error: '+e.message; }
+      } catch (e) {
+        authInfo.innerText = e.message;
+      }
     };
-    btnSignOut.onclick = async () => { await auth.signOut(); };
 
-    auth.onAuthStateChanged(user => {
+    btnSignOut.onclick = () => auth.signOut();
+
+    auth.onAuthStateChanged((user) => {
       if (user) {
-        authInfo.innerText = 'Signed in as ' + user.email;
-        btnSignOut.style.display = 'inline-block';
-        btnLogin.style.display = 'none';
-        btnSignup.style.display = 'none';
-        adminArea.style.display = 'block';
-        loadContentKeys();
+        authInfo.innerText = "Signed in as: " + user.email;
+        adminArea.style.display = "block";
+        btnSignOut.style.display = "inline-block";
+        btnLogin.style.display = "none";
+        btnSignup.style.display = "none";
+        loadContent();
         loadMessages();
       } else {
-        authInfo.innerText = 'Not signed in.';
-        btnSignOut.style.display = 'none';
-        btnLogin.style.display = 'inline-block';
-        btnSignup.style.display = 'inline-block';
-        adminArea.style.display = 'none';
+        authInfo.innerText = "Not signed in.";
+        adminArea.style.display = "none";
+        btnSignOut.style.display = "none";
+        btnLogin.style.display = "inline-block";
+        btnSignup.style.display = "inline-block";
       }
     });
 
-    // Content functions (store in collection 'site_content', doc id = key)
-    async function loadContentKeys(){
-      contentList.innerHTML = 'Loading...';
-      const snap = await db.collection('site_content').get();
-      contentList.innerHTML = '';
-      snap.forEach(doc => {
-        const d = doc.data();
-        const el = document.createElement('div');
-        el.className = 'msg';
-        el.innerHTML = '<strong>'+doc.id+'</strong><div>'+ (d.value || '') +'</div>';
-        el.onclick = () => {
+    // LOAD CONTENT
+    async function loadContent() {
+      contentList.innerHTML = "Loading...";
+      const snap = await db.collection("site_content").get();
+      contentList.innerHTML = "";
+      snap.forEach((doc) => {
+        const data = doc.data();
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.innerHTML = "<b>" + doc.id + "</b><br>" + data.value;
+        div.onclick = () => {
           contentKey.value = doc.id;
-          contentValue.value = d.value || '';
+          contentValue.value = data.value;
         };
-        contentList.appendChild(el);
+        contentList.appendChild(div);
       });
     }
 
     saveContent.onclick = async () => {
-      const k = contentKey.value.trim();
-      if(!k){ alert('Enter key'); return; }
-      await db.collection('site_content').doc(k).set({ value: contentValue.value });
-      alert('Saved');
-      loadContentKeys();
-    };
-    deleteContent.onclick = async () => {
-      const k = contentKey.value.trim();
-      if(!k){ alert('Enter key'); return; }
-      if(!confirm('Delete key '+k+' ?')) return;
-      await db.collection('site_content').doc(k).delete();
-      alert('Deleted');
-      loadContentKeys();
+      if (!contentKey.value) return alert("Enter key name first!");
+      await db.collection("site_content").doc(contentKey.value).set({
+        value: contentValue.value,
+      });
+      alert("Saved!");
+      loadContent();
     };
 
-    // Messages
-    async function loadMessages(){
-      messagesList.innerHTML = 'Loading...';
-      const snap = await db.collection('contact_messages').orderBy('timestamp','desc').limit(200).get();
-      messagesList.innerHTML = '';
-      const arr = [];
-      snap.forEach(doc => {
+    deleteContent.onclick = async () => {
+      if (!contentKey.value) return alert("Enter key first!");
+      await db.collection("site_content").doc(contentKey.value).delete();
+      alert("Deleted!");
+      loadContent();
+    };
+
+    // MESSAGES
+    async function loadMessages() {
+      messagesList.innerHTML = "Loading...";
+      const snap = await db
+        .collection("contact_messages")
+        .orderBy("timestamp", "desc")
+        .get();
+
+      messagesList.innerHTML = "";
+      const all = [];
+
+      snap.forEach((doc) => {
         const d = doc.data();
-        arr.push({id:doc.id, ...d});
-        const el = document.createElement('div');
-        el.className = 'msg';
-        el.innerHTML = '<strong>'+ (d.name||'—') +'</strong> — '+ (d.email||'') +'<div style="font-size:13px;color:#444">'+ (d.subject||'') +'</div><div style="margin-top:6px">'+ (d.message||'') +'</div><div style="font-size:12px;color:#666;margin-top:6px">'+ new Date(d.timestamp||0).toLocaleString() +'</div>';
-        messagesList.appendChild(el);
+        all.push(d);
+        const div = document.createElement("div");
+        div.className = "msg";
+        div.innerHTML =
+          "<b>" +
+          d.name +
+          "</b> — " +
+          d.email +
+          "<br>" +
+          d.subject +
+          "<br>" +
+          "<p>" +
+          d.message +
+          "</p>" +
+          new Date(d.timestamp).toLocaleString();
+        messagesList.appendChild(div);
       });
-      // save for export
-      window._lastMessagesExport = arr;
+
+      window._msgExport = all;
     }
 
     refreshMsgs.onclick = loadMessages;
+
     exportMsgs.onclick = () => {
-      const data = window._lastMessagesExport || [];
-      const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+      const blob = new Blob([JSON.stringify(window._msgExport)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href=url; a.download='messages.json'; a.click();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "messages.json";
+      a.click();
       URL.revokeObjectURL(url);
     };
-
   </script>
 </body>
 </html>
