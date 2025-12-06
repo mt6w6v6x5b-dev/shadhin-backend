@@ -1,7 +1,7 @@
 // firebase-config.js
 // (Paste your actual keys below exactly as shown)
 window.firebaseConfig = {
-  apiKey: "AIzaSyDcYaXhTX02LYPngQMD_HcJC4hTMKLV8I",
+  apiKey: "AIzaSyDcYaxhTXO2LYPnqGMD_HcJC4hxTMKlV8I",
   authDomain: "shadhin-portfolio.firebaseapp.com",
   projectId: "shadhin-portfolio",
   storageBucket: "shadhin-portfolio.firebasestorage.app",
