@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Swadhin — Simple Admin</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    /* Minimal admin styling so page looks okay without external CSS */
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:28px; background:#fff; color:#111}
+    .card{background:#fff;border:1px solid #e6e6e6;border-radius:8px;padding:24px;max-width:900px}
+    h1{font-size:48px;margin:0 0 18px}
+    input,textarea{width:100%;padding:12px;border:1px solid #ddd;border-radius:6px;margin:8px 0}
+    button{padding:10px 16px;border-radius:6px;border:1px solid #bbb;background:#f6f6f6}
+    .muted{color:#b33}
+  </style>
+</head>
+<body>
+  <h1>Swadhin — Simple Admin</h1>
+  <div class="card" id="authBox">
+    <h3>Sign in</h3>
+    <form id="authForm" onsubmit="return false;">
+      <input id="email" placeholder="Email" type="email" /><br>
+      <input id="password" placeholder="Password" type="password" /><br>
+      <button id="btnLogin">Sign in</button>
+      <button id="btnSignup">Create account</button>
+      <div id="authInfo" class="muted" style="margin-top:12px">Not signed in.</div>
+    </form>
+  </div>
+
+  <div class="card" id="adminArea" style="display:none;margin-top:18px">
+    <h3>Site Content (Edit & Save)</h3>
+    <div id="contentList"></div>
+    <h4>Edit Key</h4>
+    <input id="contentKey" placeholder="key name (e.g. about_text)" />
+    <textarea id="contentValue" rows="4" placeholder="value here"></textarea>
+    <button id="saveContent">Save</button>
+    <button id="deleteContent">Delete</button>
+    <h3>Contact Messages</h3>
+    <div id="messagesList">Loading...</div>
+    <button id="refreshMsgs">Refresh</button>
+    <button id="exportMsgs">Export JSON</button>
+  </div>
+
+  <!-- Firebase SDKs (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <!-- Your config file -->
+  <script src="firebase-config.js"></script>
+
+  <!-- admin JS (included) -->
+  <script>
+// Minimal admin logic: initialize Firebase, auth, firestore and simple UI actions
+if (!window.firebaseConfig) {
+  document.getElementById('authInfo').innerText = 'Firebase config not found! Make sure firebase-config.js is uploaded.';
+} else {
+  try{ if (!firebase.apps.length) firebase.initializeApp(window.firebaseConfig); } catch(e){}
+}
+
+const auth = window.firebase ? firebase.auth() : null;
+const db = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
+
+const authInfo = document.getElementById('authInfo');
+const adminArea = document.getElementById('adminArea');
+
+document.getElementById('btnSignup').addEventListener('click', async (ev)=>{
+  ev.preventDefault();
+  const e = document.getElementById('email').value.trim();
+  const p = document.getElementById('password').value.trim();
+  if(!e||!p){ alert('Provide email & password'); return; }
+  try{ await auth.createUserWithEmailAndPassword(e,p); alert('Account created! Please sign in.'); }catch(err){ alert(err.message) }
+});
+
+document.getElementById('btnLogin').addEventListener('click', async (ev)=>{
+  ev.preventDefault();
+  const e = document.getElementById('email').value.trim();
+  const p = document.getElementById('password').value.trim();
+  if(!e||!p){ alert('Provide email & password'); return; }
+  try{ await auth.signInWithEmailAndPassword(e,p); } catch(err){ alert(err.message); }
+});
+
+if(auth){
+  auth.onAuthStateChanged(user => {
+    if(user){
+      authInfo.innerText = 'Signed in as '+ (user.email||user.uid);
+      adminArea.style.display = 'block';
+      loadMessages();
+    } else {
+      authInfo.innerText = 'Not signed in.';
+      adminArea.style.display = 'none';
+    }
+  });
+}
+
+async function loadMessages(){
+  if(!db) return;
+  const list = document.getElementById('messagesList');
+  list.innerText = 'Loading...';
+  try{
+    const snap = await db.collection('contact_messages').orderBy('timestamp','desc').limit(100).get();
+    if(snap.empty){ list.innerText = 'No messages'; return; }
+    list.innerHTML = '';
+    snap.forEach(doc=>{
+      const data = doc.data();
+      const el = document.createElement('div');
+      el.style.borderBottom='1px solid #eee'; el.style.padding='8px 0';
+      el.innerHTML = '<strong>'+ (data.name||'') +'</strong> ('+(data.email||'')+')<div>'+ (data.message||'') +'</div><button onclick="deleteMsg(\''+doc.id+'\')">Delete</button>';
+      list.appendChild(el);
+    });
+  }catch(err){ list.innerText = 'Load failed: '+err.message }
+}
+
+window.deleteMsg = async function(id){
+  if(!confirm('Delete message?')) return;
+  try{ await db.collection('contact_messages').doc(id).delete(); alert('Deleted'); loadMessages(); }catch(err){ alert(err.message) }
+}
+  </script>
+
+</body>
+</html>
